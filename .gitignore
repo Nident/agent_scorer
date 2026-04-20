@@ -1,0 +1,5 @@
+.env
+model.env
+__pycache__
+*.md
+*.json

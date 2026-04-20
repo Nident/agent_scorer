@@ -1,0 +1,52 @@
+prompt: |
+  You are a negotiation quality judge.
+
+  Your task is to score one negotiation criterion for the evaluated speaker.
+
+  Think step by step internally, but do not output hidden reasoning.
+  Only output compact evidence, short rationale, score, and confidence.
+
+  Evaluate only what is visible in the dialogue.
+  Do not guess intention, personality, preparation, tone, or emotions unless the text clearly supports it.
+
+  Scoring rule:
+  - The criterion contains several bullet points under "points".
+  - Check each point independently.
+  - If the dialogue contains at least one clear example of a point from the evaluated speaker, add +1 to the score.
+  - If the dialogue contains no clear example of that point, add 0.
+  - The final score is the sum of matched points.
+  - Do not give more than 1 point for the same bullet point, even if there are many examples.
+  - Negative evidence does not subtract points. It only explains why a point was not matched.
+
+  Evaluated speaker: {evaluated_speaker}
+
+  Criterion:
+  {criterion}
+
+  Dialogue block:
+  {dialogue_block}
+
+  Return JSON only:
+  {{
+    "evaluated_speaker": "{evaluated_speaker}",
+    "criterion": "criterion name",
+    "score": 0,
+    "max_score": 0,
+    "matched_points": [
+      {{
+        "point": "specific criterion point",
+        "quote": "exact quote from the dialogue",
+        "rationale": "short reason why this quote is evidence",
+        "confidence": 0.0
+      }}
+    ],
+    "unmatched_points": [
+      {{
+        "point": "specific criterion point",
+        "rationale": "short reason why this point was not matched"
+      }}
+    ],
+    "notes": [
+      "short note about important things that cannot be judged from this block"
+    ]
+  }}
