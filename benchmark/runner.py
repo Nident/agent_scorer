@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import multiprocessing as mp
 import os
 from pathlib import Path
 from typing import Any
@@ -275,26 +276,42 @@ def _run_llm_predictions(
 ) -> list[PredictionRecord]:
     load_dotenv(resolve_path(model_env_path))
     api_key = os.getenv("API_KEY", "")
-    model = Model(
-        model_name=os.getenv("MODEL_NAME", "deepseek-chat"),
-        base_url=os.getenv("BASE_URL", "https://api.deepseek.com"),
-        temperature=read_optional_float("TEMPERATURE"),
-        max_tokens=read_optional_int("MAX_TOKENS"),
-        top_p=read_optional_float("TOP_P"),
-        top_k=read_optional_int("TOP_K"),
-        thinking_mode=read_thinking_mode(),
-        max_retries=read_optional_int("RESPONSE_MAX_RETRIES") or 3,
-        request_timeout=read_optional_timeout("REQUEST_TIMEOUT"),
+    model_config = {
+        "model_name": os.getenv("MODEL_NAME", "deepseek-chat"),
+        "base_url": os.getenv("BASE_URL", "https://api.deepseek.com"),
+        "temperature": read_optional_float("TEMPERATURE"),
+        "max_tokens": read_optional_int("MAX_TOKENS"),
+        "top_p": read_optional_float("TOP_P"),
+        "top_k": read_optional_int("TOP_K"),
+        "thinking_mode": read_thinking_mode(),
+        "max_retries": read_optional_int("RESPONSE_MAX_RETRIES") or 3,
+        "request_timeout": read_optional_timeout("REQUEST_TIMEOUT"),
+    }
+    case_timeout = (
+        read_optional_timeout("CASE_TIMEOUT")
+        or read_optional_timeout("REQUEST_TIMEOUT")
+        or 120.0
     )
 
     predictions_path = output_dir / "predictions.jsonl"
+    temporary_predictions_path = output_dir / "predictions.jsonl.tmp"
+    if temporary_predictions_path.exists():
+        temporary_predictions_path.unlink()
+    if predictions_path.exists():
+        predictions_path.unlink()
+
     records: list[PredictionRecord] = []
-    with predictions_path.open("w", encoding="utf-8") as file:
+    with temporary_predictions_path.open("w", encoding="utf-8") as file:
         total = len(cases)
         for index, case in enumerate(cases, start=1):
             print(f"[{index}/{total}] Running DeepSeek benchmark case: {case.id}", flush=True)
             try:
-                prediction = model.query_json(api_key, build_benchmark_prompt(case))
+                prediction = _query_json_with_timeout(
+                    api_key=api_key,
+                    model_config=model_config,
+                    prompt=build_benchmark_prompt(case),
+                    timeout_seconds=case_timeout,
+                )
                 record = PredictionRecord(case_id=case.id, prediction=prediction)
             except Exception as exc:  # noqa: BLE001 - benchmark should keep going per case.
                 record = PredictionRecord(
@@ -317,7 +334,49 @@ def _run_llm_predictions(
                 + "\n"
             )
             file.flush()
+    temporary_predictions_path.replace(predictions_path)
     return records
+
+
+def _query_json_with_timeout(
+    api_key: str,
+    model_config: dict[str, Any],
+    prompt: str,
+    timeout_seconds: float,
+) -> dict:
+    context = mp.get_context("spawn")
+    queue = context.Queue()
+    process = context.Process(
+        target=_query_json_worker,
+        args=(api_key, model_config, prompt, queue),
+    )
+    process.start()
+    process.join(timeout_seconds)
+    if process.is_alive():
+        process.terminate()
+        process.join(5)
+        raise TimeoutError(f"LLM request exceeded {timeout_seconds:.0f} seconds.")
+
+    if queue.empty():
+        raise RuntimeError(f"LLM worker exited without a result. Exit code: {process.exitcode}.")
+
+    status, payload = queue.get()
+    if status == "ok":
+        return payload
+    raise RuntimeError(str(payload))
+
+
+def _query_json_worker(
+    api_key: str,
+    model_config: dict[str, Any],
+    prompt: str,
+    queue: Any,
+) -> None:
+    try:
+        prediction = Model(**model_config).query_json(api_key, prompt)
+        queue.put(("ok", prediction))
+    except Exception as exc:  # noqa: BLE001 - send the error back to the parent process.
+        queue.put(("error", f"{type(exc).__name__}: {exc}"))
 
 
 if __name__ == "__main__":
