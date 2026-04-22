@@ -36,7 +36,7 @@ SIMPLE_MODEL_DIR = PROJECT_ROOT / "data" / "simple_model"
 SIMPLE_MODEL_PROMPTS_DIR = SIMPLE_MODEL_DIR / "prompts"
 SIMPLE_MODEL_RESPONSES_DIR = SIMPLE_MODEL_DIR / "responses"
 DEFAULT_SIMPLE_MODEL_OUTPUT_PATH = "data/simple_model/simple_model_response.json"
-DEFAULT_TEST_DIALOGUE_PATH = "data/test_dialogue.yaml"
+DEFAULT_TEST_DIALOGUE_PATH = "data/test_dialogue.json"
 
 
 class SimpleQueryModel(Model):
@@ -61,12 +61,7 @@ class SimpleQueryModel(Model):
         return self.load_text(criterion_path)
 
     def load_test_dialogue(self, dialogue_path: str | Path = DEFAULT_TEST_DIALOGUE_PATH) -> str:
-        raw = self.load_text(dialogue_path)
-        data = yaml.safe_load(raw) or {}
-        dialogue = data.get("dialogue")
-        if not isinstance(dialogue, str) or not dialogue.strip():
-            raise ValueError("Test dialogue YAML must contain a non-empty 'dialogue' field.")
-        return dialogue.strip()
+        return self.load_dialogue_block(dialogue_path)
 
     def build_prompt(
         self,
@@ -225,7 +220,7 @@ if __name__ == "__main__":
             raise ValueError("TEMPLATE_PATH is empty.")
 
         if dialogue_input_path:
-            dialogue_block = model.load_text(dialogue_input_path)
+            dialogue_block = model.load_dialogue_block(dialogue_input_path)
         else:
             dialogue_block = model.load_test_dialogue(test_dialogue_path)
 

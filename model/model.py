@@ -50,6 +50,43 @@ class Model(ABC):
     def load_prompt(self, prompt_path: str | Path) -> str:
         return self.load_text(prompt_path)
 
+    def load_dialogue_block(self, path: str | Path) -> str:
+        resolved = self._resolve_path(path)
+        if resolved.suffix.lower() != ".json":
+            return self.load_text(resolved)
+
+        raw = self.load_text(resolved)
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return raw
+
+        if not isinstance(data, dict):
+            return raw
+
+        transcript = data.get("transcript")
+        if not isinstance(transcript, dict):
+            return raw
+
+        utterances = transcript.get("utterances")
+        if not isinstance(utterances, list):
+            return raw
+
+        lines: list[str] = []
+        for utterance in utterances:
+            if not isinstance(utterance, dict):
+                continue
+            speaker = str(utterance.get("speaker_label") or "").strip()
+            text = str(utterance.get("text") or "").strip()
+            if not speaker or not text:
+                continue
+            lines.append(f"{speaker}: {text}")
+
+        if not lines:
+            raise ValueError(f"No dialogue utterances were found in transcript JSON: {resolved}")
+
+        return "\n".join(lines)
+
     def compose_prompt(self, *sections: str) -> str:
         return "\n\n".join(section.strip() for section in sections if section and section.strip())
 

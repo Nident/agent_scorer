@@ -36,7 +36,7 @@ POINT_AGENTS_PROMPTS_DIR = POINT_AGENTS_DIR / "prompts"
 POINT_AGENTS_RESPONSES_DIR = POINT_AGENTS_DIR / "responses"
 DEFAULT_PROMPTS_PATH = POINT_AGENTS_DIR / "point_agents_prompts.yaml"
 DEFAULT_OUTPUT_PATH = "data/point_agents/point_agents_response.json"
-DEFAULT_TEST_DIALOGUE_PATH = "data/test_dialogue.yaml"
+DEFAULT_TEST_DIALOGUE_PATH = "data/test_dialogue.json"
 
 
 class PointAgentsModel(Model):
@@ -87,12 +87,7 @@ class PointAgentsModel(Model):
         return points
 
     def load_test_dialogue(self, dialogue_path: str | Path = DEFAULT_TEST_DIALOGUE_PATH) -> str:
-        raw = self.load_text(dialogue_path)
-        data = yaml.safe_load(raw) or {}
-        dialogue = data.get("dialogue")
-        if not isinstance(dialogue, str) or not dialogue.strip():
-            raise ValueError("Test dialogue YAML must contain a non-empty 'dialogue' field.")
-        return dialogue.strip()
+        return self.load_dialogue_block(dialogue_path)
 
     def _load_prompt_steps(self, prompt_path: str | Path) -> list[dict[str, Any]]:
         raw = self.load_text(prompt_path)
