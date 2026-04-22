@@ -1,6 +1,13 @@
 .env
 model.env
+point_model.env
 __pycache__
 *.md
 *.json
-data/benchmark_runs/
+data/benchmark/*
+!data/benchmark/benchmark_cases.yaml
+
+data/point_agents/*
+!data/point_agents/point_agents_prompts.yaml
+
+log*

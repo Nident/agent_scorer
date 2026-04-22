@@ -11,13 +11,8 @@ from dotenv import load_dotenv
 
 from benchmark.dataset import BenchmarkCase, load_benchmark_cases, resolve_path
 from benchmark.metrics import PredictionRecord, compute_report
-from model.model import (
-    Model,
-    read_optional_float,
-    read_optional_int,
-    read_optional_timeout,
-    read_thinking_mode,
-)
+from model.model import read_optional_float, read_optional_int, read_optional_timeout, read_thinking_mode
+from model.simple_query_model import SimpleQueryModel
 
 
 DEFAULT_CASES_PATH = "data/benchmark_cases.yaml"
@@ -373,7 +368,7 @@ def _query_json_worker(
     queue: Any,
 ) -> None:
     try:
-        prediction = Model(**model_config).query_json(api_key, prompt)
+        prediction = SimpleQueryModel(**model_config).query_json(api_key, prompt)
         queue.put(("ok", prediction))
     except Exception as exc:  # noqa: BLE001 - send the error back to the parent process.
         queue.put(("error", f"{type(exc).__name__}: {exc}"))

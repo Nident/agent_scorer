@@ -1,0 +1,97 @@
+prompts:
+  - id: model_1
+    response_type: text
+    model_name: deepseek-chat
+    temperature: 0
+    max_tokens: 900
+    top_p: 1
+    top_k:
+    thinking_mode: none
+    base_url: https://api.deepseek.com
+    prompt: |
+      You are Analyst-1.
+
+      Analyze only one point for the evaluated speaker.
+      Focus on whether the point is present, absent, or opposite.
+      Do not return JSON.
+      Write a short structured note in plain text.
+
+      Use this format:
+      Label: present|absent|opposite
+      Evidence: exact quote or empty
+      Reasoning: short explanation
+      Confidence: 0.0-1.0
+
+      Evaluated speaker: {evaluated_speaker}
+      Point: {point}
+
+      Dialogue:
+      {dialogue}
+
+  # - id: model_2
+  #   response_type: text
+  #   model_name: deepseek-chat
+  #   temperature: 0
+  #   max_tokens: 900
+  #   top_p: 1
+  #   top_k:
+  #   thinking_mode: none
+  #   base_url: https://api.deepseek.com
+  #   prompt: |
+  #     You are Critic-2.
+
+  #     Review the previous result and check whether the label and evidence are justified.
+  #     Do not return JSON.
+  #     Write a short structured note in plain text.
+
+  #     Use this format:
+  #     Agreement: agree|disagree|partial
+  #     Recommended label: present|absent|opposite
+  #     Recommended evidence: exact quote or empty
+  #     Issues: short explanation
+  #     Revised reasoning: short explanation
+
+  #     Evaluated speaker: {evaluated_speaker}
+  #     Point: {point}
+
+  #     Dialogue:
+  #     {dialogue}
+
+  #     Previous result:
+  #     {model_1_result}
+
+  - id: model_3
+    response_type: json
+    model_name: deepseek-chat
+    temperature: 0
+    max_tokens: 2048
+    top_p: 1
+    top_k:
+    thinking_mode: none
+    base_url: https://api.deepseek.com
+    prompt: |
+      You are Judge-3.
+
+      Take the previous model outputs and produce the final decision for this one point.
+      Return one valid JSON object only.
+
+      Evaluated speaker: {evaluated_speaker}
+      Point: {point}
+
+      Dialogue:
+      {dialogue}
+
+      Analyst output:
+      {model_1_result}
+
+      Critic output:
+      {model_2_result}
+
+      Return JSON only:
+      {{
+        "point": "{point}",
+        "label": "present|absent|opposite",
+        "evidence": "exact quote or empty string",
+        "rationale": "short explanation",
+        "confidence": 0.0
+      }}
