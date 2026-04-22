@@ -19,6 +19,7 @@ class Model:
         top_k: int | None = None,
         thinking_mode: str = "none",
         max_retries: int = 3,
+        request_timeout: float | None = None,
     ) -> None:
         self.model_name = model_name
         self.base_url = base_url
@@ -28,6 +29,7 @@ class Model:
         self.top_k = top_k
         self.thinking_mode = thinking_mode
         self.max_retries = max_retries
+        self.request_timeout = request_timeout
 
     @staticmethod
     def _resolve_path(path: str | Path) -> Path:
@@ -83,12 +85,7 @@ class Model:
             f"Previous invalid response:\n{raw_response}"
         )
 
-    def simple_LLM_query(
-        self,
-        api_key: str,
-        prompt_path: str | Path,
-        output_path: str | Path = "data/llm_response.json",
-    ) -> Path:
+    def query_json(self, api_key: str, prompt: str) -> dict:
         if not api_key:
             raise ValueError("API_KEY is empty. Add API_KEY=... to config/model.env")
 
@@ -98,22 +95,16 @@ class Model:
         os.environ.setdefault("TRANSFORMERS_NO_ADVISORY_WARNINGS", "1")
 
         try:
-            from langchain_openai import ChatOpenAI
-            from pydantic import SecretStr
+            from openai import OpenAI
         except ModuleNotFoundError as exc:
             raise ModuleNotFoundError(
-                "Install dependencies first: python3 -m pip install -r ../requirements.txt"
+                "Install dependencies first: python -m pip install -r requirements.txt"
             ) from exc
 
-        prompt = self.load_prompt(prompt_path)
-
-        llm = ChatOpenAI(
-            model=self.model_name,
-            api_key=SecretStr(api_key),
+        client = OpenAI(
+            api_key=api_key,
             base_url=self.base_url,
-            temperature=self.temperature,
-            max_completion_tokens=self.max_tokens,
-            top_p=self.top_p,
+            timeout=self.request_timeout,
         )
 
         current_prompt = prompt
@@ -121,23 +112,25 @@ class Model:
         last_error = ""
 
         for attempt in range(1, self.max_retries + 1):
+            request_body = {
+                "model": self.model_name,
+                "messages": [{"role": "user", "content": current_prompt}],
+                "response_format": {"type": "json_object"},
+            }
+            if self.temperature is not None:
+                request_body["temperature"] = self.temperature
+            if self.max_tokens is not None:
+                request_body["max_tokens"] = self.max_tokens
+            if self.top_p is not None:
+                request_body["top_p"] = self.top_p
             if self.thinking_mode == "enabled" and self.model_name != "deepseek-reasoner":
-                answer = llm.invoke(
-                    current_prompt,
-                    response_format={"type": "json_object"},
-                    extra_body={"thinking": {"type": "enabled"}},
-                )
-            else:
-                answer = llm.invoke(
-                    current_prompt,
-                    response_format={"type": "json_object"},
-                )
+                request_body["extra_body"] = {"thinking": {"type": "enabled"}}
 
-            raw_answer = answer.content if isinstance(answer.content, str) else str(answer.content)
+            answer = client.chat.completions.create(**request_body)
+            raw_answer = answer.choices[0].message.content or ""
 
             try:
-                json_answer = self.validate_json(raw_answer)
-                return self.save_json(json_answer, output_path)
+                return self.validate_json(raw_answer)
             except ValueError as exc:
                 last_error = str(exc)
                 if attempt == self.max_retries:
@@ -148,6 +141,15 @@ class Model:
             f"LLM response is not valid JSON after {self.max_retries} attempts. "
             f"Last error: {last_error}. Last response: {raw_answer}"
         )
+
+    def simple_LLM_query(
+        self,
+        api_key: str,
+        prompt_path: str | Path,
+        output_path: str | Path = "data/llm_response.json",
+    ) -> Path:
+        prompt = self.load_prompt(prompt_path)
+        return self.save_json(self.query_json(api_key, prompt), output_path)
 
 
 def read_optional_float(name: str) -> float | None:
@@ -172,6 +174,13 @@ def read_thinking_mode() -> str:
     return thinking_mode
 
 
+def read_optional_timeout(name: str) -> float | None:
+    value = os.getenv(name, "").strip()
+    if not value:
+        return None
+    return float(value)
+
+
 if __name__ == "__main__":
     load_dotenv(PROJECT_ROOT / "config" / "model.env")
 
@@ -186,6 +195,7 @@ if __name__ == "__main__":
     top_k = read_optional_int("TOP_K")
     thinking_mode = read_thinking_mode()
     max_retries = read_optional_int("RESPONSE_MAX_RETRIES") or 3
+    request_timeout = read_optional_timeout("REQUEST_TIMEOUT")
 
     saved_path = Model(
         model_name=model_name,
@@ -196,6 +206,7 @@ if __name__ == "__main__":
         top_k=top_k,
         thinking_mode=thinking_mode,
         max_retries=max_retries,
+        request_timeout=request_timeout,
     ).simple_LLM_query(
         api_key=api_key,
         prompt_path=prompt_path,

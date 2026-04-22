@@ -3,3 +3,4 @@ model.env
 __pycache__
 *.md
 *.json
+data/benchmark_runs/
