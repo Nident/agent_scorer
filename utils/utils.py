@@ -130,6 +130,36 @@ def load_points(criterion_path: str | Path, context: dict) -> list[str]:
     return []
 
 
+def get_summary_blocks(context: dict) -> list[dict]:
+    summary_blocks = context.get("dialogue_summaries")
+    if isinstance(summary_blocks, list):
+        return [block for block in summary_blocks if isinstance(block, dict)]
+
+    summary = context.get("summary")
+    if isinstance(summary, dict):
+        blocks = summary.get("blocks")
+        if isinstance(blocks, list):
+            return [block for block in blocks if isinstance(block, dict)]
+
+    return []
+
+
+def summary_for_block(context: dict, block_index: int) -> str:
+    for block in get_summary_blocks(context):
+        if int(block.get("block_index", -1)) == block_index:
+            return str(block.get("summary", "") or "")
+    return ""
+
+
+def summary_history_before(context: dict, block_index: int) -> str:
+    history = []
+    for block in get_summary_blocks(context):
+        current_index = int(block.get("block_index", -1))
+        if 0 < current_index < block_index and block.get("summary"):
+            history.append(f"Блок {current_index}: {block['summary']}")
+    return "\n".join(history)
+
+
 def to_bool(value: Any, default: bool = False) -> bool:
     if value is None:
         return default

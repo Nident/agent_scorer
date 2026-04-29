@@ -1,0 +1,16 @@
+services:
+  agent-scorer:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_TYPE: ${MODEL_TYPE:-points}
+      DIALOGUE_BLOCK_SIZE: ${DIALOGUE_BLOCK_SIZE:-6}
+      SKIP_PREDICT: ${SKIP_PREDICT:-1}
+      SUMMARY_SKIP_PREDICT: ${SUMMARY_SKIP_PREDICT:-1}
+      EVALUATED_SPEAKER: ${EVALUATED_SPEAKER:-B}
+      API_KEY: ${API_KEY:-}
+      PROMPT_PATH: ${PROMPT_PATH:-}
+      DIALOGUE_INPUT_PATH: ${DIALOGUE_INPUT_PATH:-}
+      CRETERIONS_PATH: ${CRETERIONS_PATH:-}
+      LLM_RESPONSE_PATH: ${LLM_RESPONSE_PATH:-data/responses/web}

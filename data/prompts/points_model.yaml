@@ -38,6 +38,12 @@ points_model:
       Evaluated speaker: {evaluated_speaker}
       Point: {point}
 
+      Previous dialogue summary for context only:
+      {dialogue_history}
+
+      Current block summary for context only:
+      {dialogue_block_summary}
+
       Dialogue:
       {dialogue}
 
@@ -82,6 +88,9 @@ points_model:
 
       Dialogue_history:
       {dialogue_history}
+
+      Current block summary:
+      {dialogue_block_summary}
       
       Dialogue:
       {dialogue}
@@ -119,6 +128,12 @@ points_model:
 
       Evaluated speaker: {evaluated_speaker}
       Point: {point}
+
+      Previous dialogue summary for context only:
+      {dialogue_history}
+
+      Current block summary for context only:
+      {dialogue_block_summary}
 
       Dialogue:
       {dialogue}

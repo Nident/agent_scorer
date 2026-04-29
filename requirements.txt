@@ -5,3 +5,5 @@ dotenv
 datasets
 pyyaml
 pandas
+fastapi
+uvicorn[standard]

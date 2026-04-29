@@ -5,6 +5,8 @@ from .utils import (
     load_points,
     load_steps,
     load_text_if_exists,
+    summary_for_block,
+    summary_history_before,
     to_bool,
     resolve_criterion_path,
     resolve_dialogue_path,
@@ -21,5 +23,7 @@ __all__ = [
     "load_text_if_exists",
     "dialogue_to_text",
     "load_points",
+    "summary_for_block",
+    "summary_history_before",
     "to_bool",
 ]

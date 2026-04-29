@@ -3,7 +3,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-from models import PointQueryModel, SimpleQueryModel
+from models import DialogueSummaryModule, PointQueryModel, SimpleQueryModel
 from utils import (
     load_dialogue,
     load_steps,
@@ -45,9 +45,22 @@ if __name__ == "__main__":
     evaluated_speaker = os.getenv("EVALUATED_SPEAKER", "B")
     dialogue_block_size = int(os.getenv("DIALOGUE_BLOCK_SIZE", "6"))
     skip_predict = to_bool(os.getenv("SKIP_PREDICT", "1"), default=True)
+    summary_skip_predict = to_bool(os.getenv("SUMMARY_SKIP_PREDICT", str(int(skip_predict))), default=skip_predict)
 
     steps = load_steps(prompt_path, f"{model_type}_model")
     dialogue = load_dialogue(dialogue_path)
+
+    summary_module = DialogueSummaryModule()
+    summary = summary_module.run(
+        context={
+            "api_key": api_key,
+            "dialogue": dialogue,
+            "evaluated_speaker": evaluated_speaker,
+            "dialogue_block_size": dialogue_block_size,
+            "skip_predict": skip_predict,
+            "summary_skip_predict": summary_skip_predict,
+        }
+    )
 
     context = {
         "api_key": api_key,
@@ -56,6 +69,9 @@ if __name__ == "__main__":
         "evaluated_speaker": evaluated_speaker,
         "dialogue_block_size": dialogue_block_size,
         "skip_predict": skip_predict,
+        "summary": summary,
+        "dialogue_summary": summary.get("combined_summary", ""),
+        "dialogue_summaries": summary.get("blocks", []),
     }
 
     model = MODELS[model_type]()
@@ -72,6 +88,7 @@ if __name__ == "__main__":
             "prompt_file": prompt_path.name,
             "dialogue_path": str(dialogue_path),
             "dialogue_file": dialogue_path.name,
+            "summary_mode": summary.get("mode", ""),
         },
     )
     print(f"Saved output: {saved_path}")

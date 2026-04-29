@@ -20,5 +20,6 @@ data/point_agents/*
 !data/point_agents/point_agents_prompts.yaml
 
 log*
+*.log
 old_arch/
 evaluation_ANLI/generated/

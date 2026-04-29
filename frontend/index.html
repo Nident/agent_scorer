@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Scorer</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-monitor" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="12" rx="2"></rect>
+        <path d="M8 20h8M12 16v4M7 8v4M11 10v2M15 7v5"></path>
+      </symbol>
+      <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="m4 11 8-7 8 7"></path>
+        <path d="M6 10v9h12v-9"></path>
+      </symbol>
+      <symbol id="icon-session" viewBox="0 0 24 24">
+        <path d="M7 3v4M17 3v4M4 8h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"></path>
+      </symbol>
+      <symbol id="icon-chart" viewBox="0 0 24 24">
+        <path d="M4 19V5M4 19h16M8 16v-5M12 16V8M16 16v-3"></path>
+      </symbol>
+      <symbol id="icon-play" viewBox="0 0 24 24">
+        <path d="m8 5 11 7-11 7Z"></path>
+      </symbol>
+      <symbol id="icon-file" viewBox="0 0 24 24">
+        <path d="M7 3h7l4 4v14H7Z"></path>
+        <path d="M14 3v5h5M9 13h6M9 17h6"></path>
+      </symbol>
+      <symbol id="icon-user" viewBox="0 0 24 24">
+        <path d="M20 21a8 8 0 0 0-16 0"></path>
+        <circle cx="12" cy="8" r="4"></circle>
+      </symbol>
+      <symbol id="icon-score" viewBox="0 0 24 24">
+        <path d="M12 3v18M6 7h12M8 7c0 4 2 6 4 6s4-2 4-6M8 17h8"></path>
+      </symbol>
+      <symbol id="icon-spark" viewBox="0 0 24 24">
+        <path d="M13 2 9 10l-7 3 7 3 4 8 4-8 7-3-7-3Z"></path>
+      </symbol>
+      <symbol id="icon-send" viewBox="0 0 24 24">
+        <path d="m3 11 18-8-8 18-2-7Z"></path>
+      </symbol>
+    </svg>
+
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand" aria-label="Agent Scorer">
+          <div class="brand-mark"></div>
+          <div>
+            <strong>Agent Scorer</strong>
+            <span>negotiation AI</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Основная навигация">
+          <a class="nav-item active" href="#home">
+            <svg><use href="#icon-home"></use></svg>
+            Главная
+          </a>
+          <a class="nav-item" href="#sessions">
+            <svg><use href="#icon-session"></use></svg>
+            Сессии
+          </a>
+          <a class="nav-item" href="#analysis">
+            <svg><use href="#icon-chart"></use></svg>
+            Аналитика
+          </a>
+          <a class="nav-item" href="#criteria">
+            <svg><use href="#icon-score"></use></svg>
+            Компетенции
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <span class="status-dot"></span>
+          API готов
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div class="topbar-icon">
+            <svg><use href="#icon-monitor"></use></svg>
+          </div>
+          <div class="topbar-actions">
+            <span class="notification">7</span>
+            <div class="avatar">AI</div>
+          </div>
+        </header>
+
+        <section class="hero-strip" id="home">
+          <div>
+            <p class="eyebrow">Оценка готовности</p>
+            <h1>Сессия переговоров</h1>
+            <p id="sessionSubtitle">Выберите диалог, критерий и запустите анализ.</p>
+          </div>
+          <button class="primary-action" id="runAnalysis">
+            <svg><use href="#icon-send"></use></svg>
+            Анализировать
+          </button>
+        </section>
+
+        <section class="workspace-grid">
+          <form class="control-panel" id="analysisForm">
+            <div class="panel-heading">
+              <div class="panel-icon">
+                <svg><use href="#icon-spark"></use></svg>
+              </div>
+              <div>
+                <h2>Параметры</h2>
+                <p>Модель, диалог и критерий</p>
+              </div>
+            </div>
+
+            <div class="field-grid">
+              <label>
+                <span>Модель</span>
+                <select id="modelType"></select>
+              </label>
+              <label>
+                <span>Оцениваемый спикер</span>
+                <input id="evaluatedSpeaker" type="text" value="B" />
+              </label>
+              <label>
+                <span>Диалог</span>
+                <select id="dialoguePath"></select>
+              </label>
+              <label>
+                <span>Критерий</span>
+                <select id="criterionPath"></select>
+              </label>
+              <label>
+                <span>Размер блока</span>
+                <input id="blockSize" type="number" min="1" max="40" value="6" />
+              </label>
+              <label>
+                <span>API key</span>
+                <input id="apiKey" type="password" autocomplete="off" placeholder="Для реального LLM-вызова" />
+              </label>
+            </div>
+
+            <label class="toggle-row">
+              <input id="skipPredict" type="checkbox" checked />
+              <span>Debug без вызова LLM</span>
+            </label>
+
+            <label class="full-field">
+              <span>Свой диалог</span>
+              <textarea id="customDialogue" rows="6" placeholder="JSON transcript или текст диалога"></textarea>
+            </label>
+
+            <div class="form-actions">
+              <button type="submit" class="primary-action">
+                <svg><use href="#icon-send"></use></svg>
+                Запустить
+              </button>
+              <button type="button" class="ghost-action" id="clearCustom">Очистить</button>
+            </div>
+          </form>
+
+          <section class="sessions-panel" id="sessions">
+            <div class="panel-heading compact">
+              <div class="panel-icon alt">
+                <svg><use href="#icon-session"></use></svg>
+              </div>
+              <div>
+                <h2>Сессии</h2>
+                <p>Локальные стенограммы</p>
+              </div>
+            </div>
+            <div class="session-table" id="sessionTable"></div>
+          </section>
+        </section>
+
+        <div class="status-line" id="statusLine">Готов к анализу.</div>
+
+        <section class="session-summary">
+          <div class="metric-card">
+            <div class="metric-icon">
+              <svg><use href="#icon-user"></use></svg>
+            </div>
+            <div>
+              <span>Участник</span>
+              <strong id="participantName">B</strong>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon teal">
+              <svg><use href="#icon-score"></use></svg>
+            </div>
+            <div>
+              <span>Результат</span>
+              <strong><span id="scoreValue">0</span> баллов</strong>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon orange">
+              <svg><use href="#icon-chart"></use></svg>
+            </div>
+            <div>
+              <span>Оценено навыков</span>
+              <strong id="skillsCount">0</strong>
+            </div>
+          </div>
+        </section>
+
+        <nav class="tabs" aria-label="Вкладки сессии">
+          <button class="tab-button active" data-tab="video">
+            <svg><use href="#icon-play"></use></svg>
+            Видеоанализ
+          </button>
+          <button class="tab-button" data-tab="assessment">
+            <svg><use href="#icon-score"></use></svg>
+            Оценка сессии
+          </button>
+          <button class="tab-button" data-tab="results">
+            <svg><use href="#icon-chart"></use></svg>
+            Результаты
+          </button>
+          <button class="tab-button" data-tab="scenario">
+            <svg><use href="#icon-file"></use></svg>
+            Описание сценария
+          </button>
+        </nav>
+
+        <section class="tab-panel active" id="tab-video">
+          <div class="video-grid">
+            <div class="video-column">
+              <div class="video-stage">
+                <svg><use href="#icon-play"></use></svg>
+              </div>
+              <div class="transcript-strip" id="transcriptStrip">Стенограмма появится после анализа.</div>
+            </div>
+
+            <aside class="summary-panel" id="analysis">
+              <div class="panel-heading compact">
+                <div class="panel-icon">
+                  <svg><use href="#icon-chart"></use></svg>
+                </div>
+                <div>
+                  <h2>Суммаризация</h2>
+                  <p id="summaryCount">0 блоков</p>
+                </div>
+              </div>
+              <div class="summary-list" id="summaryList"></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-assessment">
+          <div class="assessment-panel" id="criteria">
+            <div class="overall-row">
+              <div class="score-ring" id="scoreRing"><span>0</span></div>
+              <div>
+                <h2>Общая оценка</h2>
+                <p id="assessmentSubtitle">Нет данных оценки.</p>
+              </div>
+            </div>
+            <div class="competency-list" id="competencyList"></div>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-results">
+          <div class="results-panel">
+            <div class="result-total">
+              <span>Итого</span>
+              <strong id="totalScore">0</strong>
+            </div>
+            <pre id="rawResult">{}</pre>
+          </div>
+        </section>
+
+        <section class="tab-panel" id="tab-scenario">
+          <div class="scenario-panel" id="scenarioPanel">
+            <div class="scenario-visual">
+              <div class="scenario-badge">AI</div>
+            </div>
+            <div id="scenarioText"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>

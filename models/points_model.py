@@ -21,6 +21,8 @@ try:
         load_points,
         load_steps,
         load_text_if_exists,
+        summary_for_block,
+        summary_history_before,
         to_bool,
         resolve_criterion_path,
         resolve_dialogue_path,
@@ -36,6 +38,8 @@ except ModuleNotFoundError:
         load_points,
         load_steps,
         load_text_if_exists,
+        summary_for_block,
+        summary_history_before,
         to_bool,
         resolve_criterion_path,
         resolve_dialogue_path,
@@ -111,6 +115,8 @@ class PointQueryModel(Model):
             for block_index, dialogue_block in enumerate(dialogue_blocks, start=1):
                 step_results = {}
                 last_result = ""
+                history_for_prompt = summary_history_before(context, block_index) or dialogue_history
+                dialogue_block_summary = summary_for_block(context, block_index)
 
                 for step in steps:
                     self._apply_step_config(step, context, initialize_llm=not skip_predict)
@@ -122,8 +128,10 @@ class PointQueryModel(Model):
                             "criterion": criterion_text,
                             "dialogue": dialogue_block,
                             "dialogue_block": dialogue_block,
-                            "dialogue_history": dialogue_history,
-                            "dialoghistory": dialogue_history,
+                            "dialogue_history": history_for_prompt,
+                            "dialoghistory": history_for_prompt,
+                            "dialogue_summary": context.get("dialogue_summary", ""),
+                            "dialogue_block_summary": dialogue_block_summary,
                             "last_result": last_result,
                             **{f"{key}_result": value for key, value in step_results.items()},
                         }
@@ -157,8 +165,9 @@ class PointQueryModel(Model):
                 point_blocks.append(
                     {
                         "block_index": block_index,
-                        "dialogue_history": dialogue_history,
+                        "dialogue_history": history_for_prompt,
                         "dialogue_block": dialogue_block,
+                        "dialogue_block_summary": dialogue_block_summary,
                         "steps": step_results,
                         "final": step_results.get(steps[-1]["id"]),
                     }
@@ -176,6 +185,7 @@ class PointQueryModel(Model):
         return {
             "evaluated_speaker": evaluated_speaker,
             "skip_predict": skip_predict,
+            "summary": context.get("summary", {}),
             "results": all_points,
         }
 

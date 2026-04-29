@@ -20,6 +20,8 @@ try:
         load_dialogue,
         load_steps,
         load_text_if_exists,
+        summary_for_block,
+        summary_history_before,
         to_bool,
         resolve_criterion_path,
         resolve_dialogue_path,
@@ -34,6 +36,8 @@ except ModuleNotFoundError:
         load_dialogue,
         load_steps,
         load_text_if_exists,
+        summary_for_block,
+        summary_history_before,
         to_bool,
         resolve_criterion_path,
         resolve_dialogue_path,
@@ -100,14 +104,18 @@ class SimpleQueryModel(Model):
         dialogue_history = ""
 
         for idx, dialogue_block in enumerate(dialogue_blocks, start=1):
+            history_for_prompt = summary_history_before(context, idx) or dialogue_history
+            dialogue_block_summary = summary_for_block(context, idx)
             prompt = step["prompt"].format_map(
                 {
                     "evaluated_speaker": evaluated_speaker,
                     "criterion": criterion_text,
                     "dialogue": dialogue_block,
                     "dialogue_block": dialogue_block,
-                    "dialogue_history": dialogue_history,
-                    "dialoghistory": dialogue_history,
+                    "dialogue_history": history_for_prompt,
+                    "dialoghistory": history_for_prompt,
+                    "dialogue_summary": context.get("dialogue_summary", ""),
+                    "dialogue_block_summary": dialogue_block_summary,
                 }
             )
 
@@ -127,8 +135,9 @@ class SimpleQueryModel(Model):
             block_results.append(
                 {
                     "block_index": idx,
-                    "dialogue_history": dialogue_history,
+                    "dialogue_history": history_for_prompt,
                     "dialogue_block": dialogue_block,
+                    "dialogue_block_summary": dialogue_block_summary,
                     "prompt": prompt,
                     "result": parsed_response,
                 }
@@ -140,6 +149,7 @@ class SimpleQueryModel(Model):
         return {
             "evaluated_speaker": evaluated_speaker,
             "skip_predict": skip_predict,
+            "summary": context.get("summary", {}),
             "blocks": block_results,
             "final": final_result,
         }

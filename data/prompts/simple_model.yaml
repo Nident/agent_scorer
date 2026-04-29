@@ -35,6 +35,12 @@ simple_model:
       Criterion:
       {criterion}
 
+      Previous dialogue summary for context only:
+      {dialogue_history}
+
+      Current block summary for context only:
+      {dialogue_block_summary}
+
       Dialogue block:
       {dialogue_block}
 
