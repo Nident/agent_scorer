@@ -1,4 +1,4 @@
-prompts:
+points_model:
   - id: model_1
     response_type: text
     model_name: deepseek-chat
@@ -28,37 +28,40 @@ prompts:
       Dialogue:
       {dialogue}
 
-  # - id: model_2
-  #   response_type: text
-  #   model_name: deepseek-chat
-  #   temperature: 0
-  #   max_tokens: 900
-  #   top_p: 1
-  #   top_k:
-  #   thinking_mode: none
-  #   base_url: https://api.deepseek.com
-  #   prompt: |
-  #     You are Critic-2.
+  - id: model_2
+    response_type: text
+    model_name: deepseek-chat
+    temperature: 0
+    max_tokens: 900
+    top_p: 1
+    top_k:
+    thinking_mode: none
+    base_url: https://api.deepseek.com
+    prompt: |
+      You are Critic-2.
 
-  #     Review the previous result and check whether the label and evidence are justified.
-  #     Do not return JSON.
-  #     Write a short structured note in plain text.
+      Review the previous result and check whether the label and evidence are justified.
+      Do not return JSON.
+      Write a short structured note in plain text.
 
-  #     Use this format:
-  #     Agreement: agree|disagree|partial
-  #     Recommended label: present|absent|opposite
-  #     Recommended evidence: exact quote or empty
-  #     Issues: short explanation
-  #     Revised reasoning: short explanation
+      Use this format:
+      Agreement: agree|disagree|partial
+      Recommended label: present|absent|opposite
+      Recommended evidence: exact quote or empty
+      Issues: short explanation
+      Revised reasoning: short explanation
 
-  #     Evaluated speaker: {evaluated_speaker}
-  #     Point: {point}
+      Evaluated speaker: {evaluated_speaker}
+      Point: {point}
 
-  #     Dialogue:
-  #     {dialogue}
+      Dialogue_history:
+      {dialogue_history}
+      
+      Dialogue:
+      {dialogue}
 
-  #     Previous result:
-  #     {model_1_result}
+      Previous result:
+      {model_1_result}
 
   - id: model_3
     response_type: json

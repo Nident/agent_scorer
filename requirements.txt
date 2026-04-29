@@ -1,3 +1,7 @@
 langchain-openai
 python-dotenv
 PyYAML
+dotenv
+datasets
+pyyaml
+pandas
