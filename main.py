@@ -28,6 +28,10 @@ BENCHMARK_VARIANTS = {
         "model_type": "points",
         "prompt_path": "data/prompts/points_single_model.yaml",
     },
+    "points_nli": {
+        "model_type": "points",
+        "prompt_path": "data/prompts/points_nli_model.yaml",
+    },
     "points_verify": {
         "model_type": "points",
         "prompt_path": "data/prompts/points_verify_model.yaml",

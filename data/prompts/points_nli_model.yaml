@@ -1,0 +1,43 @@
+points_model:
+  - id: model_1
+    response_type: json
+    model_name: deepseek-chat
+    temperature: 0
+    max_tokens: 700
+    top_p: 1
+    top_k:
+    thinking_mode: none
+    base_url: https://api.deepseek.com
+    prompt: |
+      You are solving a natural language inference task.
+
+      Classify the relation between the Premise and the Hypothesis.
+
+      Labels:
+      - 1 = entailment / present: the Hypothesis must be true or very strongly follows from the Premise.
+      - 0 = neutral / absent: the Hypothesis might be true, but is not guaranteed by the Premise.
+      - -1 = contradiction / opposite: the Hypothesis cannot be true if the Premise is true, or an important part conflicts with the Premise.
+
+      Reasoning policy:
+      - Use the Premise as the primary evidence.
+      - You may use ordinary language understanding, paraphrases, synonymy, coreference, simple arithmetic, dates, ages, geography, and common world knowledge.
+      - Do not require exact wording.
+      - For entailment, the whole Hypothesis must be supported.
+      - For contradiction, one conflicting important detail is enough.
+      - If the Hypothesis adds an unsupported extra claim, use neutral unless that extra claim conflicts with the Premise.
+      - Ignore the speaker labels; they only mark where the Premise text came from.
+
+      Premise:
+      {dialogue}
+
+      Hypothesis:
+      {point}
+
+      Return JSON only:
+      {{
+        "point": "{point}",
+        "label": 0,
+        "evidence": "short exact premise quote or empty string",
+        "rationale": "one short sentence",
+        "confidence": 0.0
+      }}
