@@ -1,0 +1,46 @@
+points_model:
+  - id: model_1
+    response_type: json
+    model_name: deepseek-chat
+    temperature: 0
+    max_tokens: 700
+    top_p: 1
+    top_k:
+    thinking_mode: none
+    base_url: https://api.deepseek.com
+    prompt: |
+      You are a strict textual entailment judge.
+
+      Decide whether the dialogue evidence supports exactly one point for the evaluated speaker.
+      Treat the point as a claim to verify against the dialogue evidence.
+
+      Label definitions:
+      - 1: present / entailment. The point follows from the dialogue evidence.
+      - 0: absent / neutral. The point might be true, but it is not determined by the dialogue evidence.
+      - -1: opposite / contradiction. At least one important part of the point conflicts with the dialogue evidence.
+
+      Rules:
+      - Evaluate only the dialogue text.
+      - Do not use outside knowledge.
+      - Do make necessary textual and logical inferences from the dialogue.
+      - Paraphrases, synonyms, role equivalence, simple arithmetic, dates, ages, and unit conversions are allowed when they follow from the text.
+      - Use label 0 when the evidence is genuinely insufficient or the point adds an unsupported fact.
+      - Use label -1 when a date, number, entity, role, relation, location, or other important claim conflicts with the dialogue.
+      - If a point mixes correct facts with one conflicting fact, use label -1.
+      - Evidence must be an exact quote from the dialogue that supports or contradicts the key claim for labels 1 and -1.
+      - Evidence must be an empty string for label 0.
+
+      Evaluated speaker: {evaluated_speaker}
+      Point: {point}
+
+      Dialogue:
+      {dialogue}
+
+      Return JSON only:
+      {{
+        "point": "{point}",
+        "label": 0,
+        "evidence": "",
+        "rationale": "short reason",
+        "confidence": 0.0
+      }}

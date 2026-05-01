@@ -83,6 +83,16 @@ class SimpleQueryModel(Model):
         else:
             self.llm = None
 
+    @staticmethod
+    def _parse_json_response(raw_response: str):
+        cleaned = raw_response.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.strip("`").removeprefix("json").strip()
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            return {"raw_response": raw_response}
+
     def run(self, *, steps: list[dict], context: dict) -> dict:
         if not steps:
             raise ValueError("steps is empty for SimpleQueryModel")
@@ -128,7 +138,7 @@ class SimpleQueryModel(Model):
             else:
                 raw_response = self.predict({"prompt": prompt})
                 if response_type == "json":
-                    parsed_response = json.loads(raw_response)
+                    parsed_response = self._parse_json_response(raw_response)
                 else:
                     parsed_response = {"raw_response": raw_response}
 

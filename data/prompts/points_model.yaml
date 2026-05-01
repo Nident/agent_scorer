@@ -15,17 +15,18 @@ points_model:
       Think step by step internally, but do not output hidden reasoning.
       Only output compact evidence, short rationale, score, and confidence.
 
-      Evaluate only what is visible in the dialogue.
-      Do not guess intention, personality, preparation, tone, or emotions unless the text clearly supports it.
+      Evaluate only what follows from the dialogue.
+      Do not use outside knowledge, but do make necessary textual and logical inferences.
 
       Scoring rule:
       - The criterion contains several bullet points under "points".
       - Check each point independently.
       - Return exactly one result for each criterion point.
-      - Use score 1 if the evaluated speaker clearly demonstrated or mentioned the point.
-      - Use score 0 if the point was not mentioned or cannot be judged from this dialogue block.
-      - Use score -1 if the evaluated speaker clearly said or did the opposite of the point.
-      - Do not infer intent, preparation, tone, or hidden meaning.
+      - Use score 1 if the point follows from the dialogue evidence.
+      - Use score 0 if the point might be true, but is not determined by the dialogue.
+      - Use score -1 if at least one important part of the point conflicts with the dialogue.
+      - Paraphrases, synonyms, role equivalence, simple arithmetic, dates, ages, and unit conversions are allowed when they follow from the text.
+      - If a point mixes correct facts with one conflicting fact, use score -1.
       - Use an exact quote from the dialogue when score is 1 or -1.
       - Use an empty quote when score is 0.
 
@@ -63,15 +64,16 @@ points_model:
       Do not return JSON.
       Write a short structured note in plain text.
 
-      Evaluate only what is visible in the dialogue.
-      Do not guess intention, personality, preparation, tone, or emotions unless the text clearly supports it.
+      Evaluate only what follows from the dialogue.
+      Do not use outside knowledge, but do make necessary textual and logical inferences.
 
       Verification rule:
       - Check only this one point for the evaluated speaker.
-      - Use score 1 if the evaluated speaker clearly demonstrated or mentioned the point.
-      - Use score 0 if the point was not mentioned or cannot be judged from this dialogue block.
-      - Use score -1 if the evaluated speaker clearly said or did the opposite of the point.
-      - Do not infer intent, preparation, tone, or hidden meaning.
+      - Use score 1 if the point follows from the dialogue evidence.
+      - Use score 0 if the point might be true, but is not determined by the dialogue.
+      - Use score -1 if at least one important part of the point conflicts with the dialogue.
+      - Paraphrases, synonyms, role equivalence, simple arithmetic, dates, ages, and unit conversions are allowed when they follow from the text.
+      - If a point mixes correct facts with one conflicting fact, use score -1.
       - Use an exact quote from the dialogue when score is 1 or -1.
       - Use an empty quote when score is 0.
       - If Analyst-1's label or evidence is not justified, recommend the corrected label and evidence.
@@ -125,19 +127,19 @@ points_model:
       - Analyst-1 output: check whether its label, evidence, and reasoning are supported.
       - Critic-2 output: check whether it correctly finds an error or correctly confirms Analyst-1.
 
-      Evaluate only what is visible in the dialogue.
-      Do not guess intention, personality, preparation, tone, or emotions unless the text clearly supports it.
+      Evaluate only what follows from the dialogue.
+      Do not use outside knowledge, but do make necessary textual and logical inferences.
 
       Final scoring rule:
-      - Use label 1 if the evaluated speaker clearly demonstrated, stated, or directly supported the point.
-      - Use label 0 if the point is not mentioned, is too ambiguous, belongs to another speaker, or cannot be judged from this dialogue.
-      - Use label -1 only if the evaluated speaker clearly stated or did the opposite of the point.
-      - Do not infer intent, preparation, tone, or hidden meaning.
+      - Use label 1 if the point follows from the dialogue evidence.
+      - Use label 0 if the point might be true, but is not determined by the dialogue.
+      - Use label -1 if at least one important part of the point conflicts with the dialogue.
+      - Paraphrases, synonyms, role equivalence, simple arithmetic, dates, ages, and unit conversions are allowed when they follow from the text.
       - Use label 0, not -1, when the point is merely unsupported.
-      - Use label -1 only for explicit contradiction or clearly opposite behavior.
+      - If a point mixes correct facts with one conflicting fact, use label -1.
 
       Evidence rule:
-      - For label 1 or -1, evidence must be an exact quote from the evaluated speaker's dialogue.
+      - For label 1 or -1, evidence must be an exact quote from the evaluated speaker's dialogue that supports or contradicts the key claim.
       - For label 0, evidence must be an empty string.
       - Do not use quotes from other speakers as evidence.
       - If Analyst-1 or Critic-2 cites a quote that is not exact or not from the evaluated speaker, do not reuse it.

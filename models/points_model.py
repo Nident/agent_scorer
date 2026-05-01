@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -50,6 +51,139 @@ except ModuleNotFoundError:
 class _SafeFormatDict(dict):
     def __missing__(self, key):
         return ""
+
+
+def _parse_json_response(raw_response: str):
+    cleaned = raw_response.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.strip("`").removeprefix("json").strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        return {"raw_response": raw_response}
+
+
+def _extract_label_from_text(text: str):
+    patterns = [
+        r"Recommended label\s*:\s*(-?1|0|1|present|absent|opposite|entailment|neutral|contradiction)",
+        r"Label\s*:\s*(-?1|0|1|present|absent|opposite|entailment|neutral|contradiction)",
+        r'"label"\s*:\s*(-?1|0|1|"present"|"absent"|"opposite"|"entailment"|"neutral"|"contradiction")',
+        r'"score"\s*:\s*(-?1|0|1)',
+    ]
+    for pattern in patterns:
+        match = re.search(pattern, text, flags=re.IGNORECASE)
+        if match:
+            value = match.group(1).strip().strip('"')
+            parsed = _label_value({"label": value})
+            if parsed is not None:
+                return parsed
+    return None
+
+
+def _extract_field_from_text(text: str, field_name: str) -> str:
+    match = re.search(
+        rf"{re.escape(field_name)}\s*:\s*(.*?)(?:\n[A-Z][A-Za-z -]*\s*:|\Z)",
+        text,
+        flags=re.DOTALL,
+    )
+    if not match:
+        return ""
+    value = match.group(1).strip()
+    return value.strip('"').strip()
+
+
+def _step_decision(result):
+    if isinstance(result, dict):
+        raw_response = result.get("raw_response")
+        if isinstance(raw_response, str):
+            raw_decision = _step_decision(raw_response)
+            if raw_decision.get("label") is not None:
+                return raw_decision
+        return {
+            "label": _label_value(result),
+            "evidence": str(result.get("evidence", result.get("quote", "")) or ""),
+            "rationale": str(result.get("rationale", result.get("reasoning", "")) or ""),
+            "confidence": _confidence_value(result),
+        }
+
+    text = str(result or "")
+    return {
+        "label": _extract_label_from_text(text),
+        "evidence": _extract_field_from_text(text, "Recommended evidence") or _extract_field_from_text(text, "Evidence"),
+        "rationale": _extract_field_from_text(text, "Revised reasoning") or _extract_field_from_text(text, "Reasoning") or _extract_field_from_text(text, "Issues"),
+        "confidence": _extract_confidence_from_text(text),
+    }
+
+
+def _extract_confidence_from_text(text: str) -> float:
+    match = re.search(r"Confidence\s*:\s*([01](?:\.\d+)?)", text, flags=re.IGNORECASE)
+    if not match:
+        return 0.0
+    try:
+        return float(match.group(1))
+    except ValueError:
+        return 0.0
+
+
+def _consensus_final(point: str, step_results: dict):
+    first = _step_decision(step_results.get("model_1"))
+    second = _step_decision(step_results.get("model_2"))
+    if first["label"] is None or second["label"] is None:
+        return None
+    if first["label"] != second["label"]:
+        return None
+
+    evidence = second["evidence"] or first["evidence"]
+    rationale = second["rationale"] or first["rationale"] or "Analyst and verifier agreed."
+    confidence = max(first["confidence"], second["confidence"])
+    return {
+        "point": point,
+        "label": first["label"],
+        "evidence": "" if first["label"] == 0 else evidence,
+        "rationale": rationale,
+        "confidence": confidence,
+        "source": "analyst_verifier_consensus",
+    }
+
+
+def _label_value(final_result):
+    if isinstance(final_result, dict):
+        value = final_result.get("label", final_result.get("score"))
+    else:
+        return None
+    if isinstance(value, bool) or value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        normalized = str(value).strip().lower()
+        if normalized in {"present", "entailment", "entailed", "true", "1", "+1"}:
+            return 1
+        if normalized in {"opposite", "contradiction", "contradictory", "false", "-1"}:
+            return -1
+        if normalized in {"absent", "neutral", "unknown", "0", ""}:
+            return 0
+    return None
+
+
+def _confidence_value(final_result) -> float:
+    if not isinstance(final_result, dict):
+        return 0.0
+    try:
+        return float(final_result.get("confidence", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _select_point_final(point_blocks: list[dict]):
+    finals = [block.get("final") for block in point_blocks]
+    non_absent = [final for final in finals if _label_value(final) in {-1, 1}]
+    if non_absent:
+        return max(non_absent, key=_confidence_value)
+    absent = [final for final in finals if _label_value(final) == 0]
+    if absent:
+        return max(absent, key=_confidence_value)
+    return finals[-1] if finals else {}
 
 
 class PointQueryModel(Model):
@@ -152,15 +286,18 @@ class PointQueryModel(Model):
                     else:
                         raw_response = self.predict({"prompt": prompt})
                         if str(step.get("response_type", "text")).lower() == "json":
-                            try:
-                                parsed_response = json.loads(raw_response)
-                            except json.JSONDecodeError:
-                                parsed_response = {"raw_response": raw_response}
+                            parsed_response = _parse_json_response(raw_response)
                             step_results[step["id"]] = parsed_response
                             last_result = json.dumps(parsed_response, ensure_ascii=False)
                         else:
                             step_results[step["id"]] = raw_response
                             last_result = raw_response
+
+                final_result = step_results.get(steps[-1]["id"])
+                if to_bool(context.get("points_use_consensus", False), default=False):
+                    consensus = _consensus_final(point, step_results)
+                    if consensus is not None:
+                        final_result = consensus
 
                 point_blocks.append(
                     {
@@ -169,7 +306,7 @@ class PointQueryModel(Model):
                         "dialogue_block": dialogue_block,
                         "dialogue_block_summary": dialogue_block_summary,
                         "steps": step_results,
-                        "final": step_results.get(steps[-1]["id"]),
+                        "final": final_result,
                     }
                 )
                 dialogue_history = dialogue_block
@@ -178,7 +315,7 @@ class PointQueryModel(Model):
                 {
                     "point": point,
                     "blocks": point_blocks,
-                    "final": point_blocks[-1]["final"] if point_blocks else {},
+                    "final": _select_point_final(point_blocks),
                 }
             )
 
