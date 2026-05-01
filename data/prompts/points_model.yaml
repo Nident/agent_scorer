@@ -76,6 +76,8 @@ points_model:
       Recommended evidence: exact quote or empty
       Issues: short explanation
       Revised reasoning: short explanation
+      Confidence: 0.0-1.0
+
 
       Evaluated speaker: {evaluated_speaker}
       Point: {point}
@@ -101,21 +103,46 @@ points_model:
     prompt: |
       You are Judge-3 and the final negotiation quality judge.
 
-      Take the previous model outputs and produce the final decision for this one point.
+      Your task is to make the final decision for exactly one criterion point.
+      You must review the dialogue yourself, then use Analyst-1 and Critic-2 only as supporting signals.
       Return one valid JSON object only.
+
+      Think carefully internally, but do not output hidden reasoning.
+
+      What to inspect:
+      - The evaluated speaker only: {evaluated_speaker}
+      - The specific point only: {point}
+      - The dialogue text only; ignore outside knowledge and unstated assumptions.
+      - Analyst-1 output: check whether its label, evidence, and reasoning are supported.
+      - Critic-2 output: check whether it correctly finds an error or correctly confirms Analyst-1.
 
       Evaluate only what is visible in the dialogue.
       Do not guess intention, personality, preparation, tone, or emotions unless the text clearly supports it.
 
       Final scoring rule:
-      - Check only this one point for the evaluated speaker.
-      - Use score 1 if the evaluated speaker clearly demonstrated or mentioned the point.
-      - Use score 0 if the point was not mentioned or cannot be judged from this dialogue block.
-      - Use score -1 if the evaluated speaker clearly said or did the opposite of the point.
+      - Use label 1 if the evaluated speaker clearly demonstrated, stated, or directly supported the point.
+      - Use label 0 if the point is not mentioned, is too ambiguous, belongs to another speaker, or cannot be judged from this dialogue.
+      - Use label -1 only if the evaluated speaker clearly stated or did the opposite of the point.
       - Do not infer intent, preparation, tone, or hidden meaning.
-      - Use an exact quote from the dialogue when score is 1 or -1.
-      - Use an empty quote when score is 0.
-      - Prefer the Critic output only when it correctly identifies a problem in Analyst-1's result.
+      - Use label 0, not -1, when the point is merely unsupported.
+      - Use label -1 only for explicit contradiction or clearly opposite behavior.
+
+      Evidence rule:
+      - For label 1 or -1, evidence must be an exact quote from the evaluated speaker's dialogue.
+      - For label 0, evidence must be an empty string.
+      - Do not use quotes from other speakers as evidence.
+      - If Analyst-1 or Critic-2 cites a quote that is not exact or not from the evaluated speaker, do not reuse it.
+
+      How to resolve Analyst-1 vs Critic-2:
+      - If both agree and the evidence is valid, usually keep their label.
+      - If they disagree, decide from the dialogue, not from majority vote.
+      - Prefer Critic-2 only when it identifies a concrete issue in Analyst-1's label, evidence, or reasoning.
+      - Override both models if the dialogue clearly supports a different label.
+
+      Rationale rule:
+      - Keep the rationale short.
+      - Explain why the final label follows from the quote or why the point is absent.
+      - Mention uncertainty only when it affects the final label.
 
       Evaluated speaker: {evaluated_speaker}
       Point: {point}
@@ -132,7 +159,7 @@ points_model:
       Return JSON only:
       {{
         "point": "{point}",
-        "label": -1,
+        "label": 0,
         "evidence": "exact quote or empty string",
         "rationale": "short explanation",
         "confidence": 0.0

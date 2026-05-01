@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parent
 ENV_PATH = ROOT / "config" / ".env"
 CRITERIA_DIR = ROOT / "evaluation_ANLI" / "generated" / "criteria"
 DIALOGUES_DIR = ROOT / "evaluation_ANLI" / "generated" / "dialogues"
