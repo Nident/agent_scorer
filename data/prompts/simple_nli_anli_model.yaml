@@ -1,0 +1,54 @@
+simple_model:
+  - id: model_1
+    response_type: json
+    model_name: deepseek-reasoner
+    temperature: 0
+    max_tokens: 4096
+    top_p: 1
+    top_k:
+    thinking_mode: reasoning
+    base_url: https://api.deepseek.com
+    prompt: |-
+      You are solving an ANLI-style natural language inference benchmark.
+
+      You receive one Premise and a numbered list of Hypotheses.
+      Classify every Hypothesis against the Premise.
+
+      Labels:
+      - 1 = entailment / present: a careful reader would infer the Hypothesis from the Premise.
+      - 0 = neutral / absent: the Hypothesis may be true, but the Premise does not support it enough.
+      - -1 = contradiction / opposite: an important part of the Hypothesis conflicts with the Premise.
+
+      ANLI judging conventions:
+      - Use ordinary reading, not only formal logic. High-confidence paraphrases and obvious implications are present.
+      - Use common world knowledge, dates, geography, titles, roles, simple arithmetic, counts, units, and coreference.
+      - If the Premise states uncertainty, dispute, allegation, possibility, or speculation, a Hypothesis with "may" or "could" can be present.
+      - If the Premise says a work/person/place is "known as", "best known as", "one of", or gives a role/title, accept natural paraphrases of that fact.
+      - If the Premise enumerates a complete small set or says "one of three", "one of two", etc., use that count.
+      - Treat relative year claims using the implicit ANLI/Wikipedia corpus timeframe around 2019 when the Premise provides the base year.
+      - "At least N" is present when the Premise states a value equal to or greater than N.
+      - Contradiction needs an incompatible detail: a different date, number, entity, role, location, release state, or award for the same slot.
+      - Unsupported extra facts are neutral, not contradiction, unless they conflict with the Premise.
+      - If one part is supported and another important part is unsupported, use neutral.
+      - If one part is supported and another important part conflicts, use contradiction.
+
+      Think internally, then output JSON only. Return one item per Hypothesis in the same order.
+
+      Premise:
+      {dialogue_block}
+
+      Hypotheses JSON array:
+      {points_json}
+
+      Return JSON only:
+      {{
+        "points": [
+          {{
+            "point": "copy exact hypothesis text",
+            "score": 0,
+            "quote": "short exact premise quote or empty string",
+            "rationale": "one short sentence",
+            "confidence": 0.0
+          }}
+        ]
+      }}

@@ -1,0 +1,69 @@
+simple_model:
+  - id: model_1
+    response_type: json
+    model_name: deepseek-reasoner
+    temperature: 0
+    max_tokens: 4096
+    top_p: 1
+    top_k:
+    thinking_mode: reasoning
+    base_url: https://api.deepseek.com
+    prompt: |-
+      You are solving an ANLI-style natural language inference benchmark.
+
+      The benchmark uses broad dataset-annotator judgments, not only strict formal logic.
+      Classify every Hypothesis against the Premise.
+
+      Labels:
+      - 1 = entailment / present: a careful ANLI annotator would infer the Hypothesis from the Premise.
+      - 0 = neutral / absent: the Hypothesis may be true, but the Premise does not support it enough.
+      - -1 = contradiction / opposite: an important part of the Hypothesis conflicts with the Premise.
+
+      Core rules:
+      - Use ordinary language understanding, paraphrases, aliases, coreference, role/title equivalence,
+        simple arithmetic, dates, geography, lists of names, and common world knowledge.
+      - Prefer present for strong natural implications, even if the wording is loose or informal.
+      - Prefer absent for unsupported extra details that do not conflict.
+      - Prefer opposite only when the Premise gives an incompatible detail or the Hypothesis negates
+        a salient fact.
+
+      ANLI edge conventions:
+      - A work about a specific event can entail a loose causal/counterfactual claim that the work
+        depended on that event happening.
+      - If a list of writers/people contains a male-coded and female-coded name with the same surname,
+        a claim about "a man and a woman with the same last name" is present.
+      - "Nominated for an award" does not entail "won the award", but it also does not contradict it;
+        use absent unless the Premise explicitly says someone did not win or someone else won.
+      - Names with explicit numbers can be salient factual claims. If a Hypothesis changes that number
+        for the same entity, treat it as opposite.
+      - "Potential good breed choice for allergy sufferers", "hypoallergenic", or similar wording can
+        support a loose claim about being resistant/immune to allergies.
+      - Altitude, height, size, and "at least N" claims should be interpreted generously when the Premise
+        gives an equal-or-larger relevant measurement for the entity or its immediate site.
+      - "One of" plus a short enumerated set can support the count when the Premise frames the set as
+        the relevant set.
+      - Relative year claims can use the implicit ANLI/Wikipedia corpus timeframe around 2019 when a
+        base year is supplied.
+      - Being a predecessor, earlier work, later work, upcoming work, birthplace/county, founder, winner,
+        or exact age/date can contradict a Hypothesis that assigns an incompatible slot value.
+
+      Think internally, then output JSON only. Return one item per Hypothesis in the same order.
+
+      Premise:
+      {dialogue_block}
+
+      Hypotheses JSON array:
+      {points_json}
+
+      Return JSON only:
+      {{
+        "points": [
+          {{
+            "point": "copy exact hypothesis text",
+            "score": 0,
+            "quote": "short exact premise quote or empty string",
+            "rationale": "one short sentence",
+            "confidence": 0.0
+          }}
+        ]
+      }}

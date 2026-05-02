@@ -24,6 +24,22 @@ BENCHMARK_VARIANTS = {
         "model_type": "simple",
         "prompt_path": "data/prompts/simple_model.yaml",
     },
+    "simple_nli": {
+        "model_type": "simple",
+        "prompt_path": "data/prompts/simple_nli_model.yaml",
+    },
+    "simple_nli_reasoner": {
+        "model_type": "simple",
+        "prompt_path": "data/prompts/simple_nli_reasoner_model.yaml",
+    },
+    "simple_nli_anli": {
+        "model_type": "simple",
+        "prompt_path": "data/prompts/simple_nli_anli_model.yaml",
+    },
+    "simple_nli_anli_v2": {
+        "model_type": "simple",
+        "prompt_path": "data/prompts/simple_nli_anli_v2_model.yaml",
+    },
     "points_single": {
         "model_type": "points",
         "prompt_path": "data/prompts/points_single_model.yaml",

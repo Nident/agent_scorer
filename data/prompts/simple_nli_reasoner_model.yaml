@@ -1,0 +1,49 @@
+simple_model:
+  - id: model_1
+    response_type: json
+    model_name: deepseek-reasoner
+    temperature: 0
+    max_tokens: 4096
+    top_p: 1
+    top_k:
+    thinking_mode: reasoning
+    base_url: https://api.deepseek.com
+    prompt: |-
+      You are solving a natural language inference benchmark.
+
+      You receive one Premise and a numbered list of Hypotheses.
+      Classify every Hypothesis against the Premise.
+
+      Labels:
+      - 1 = entailment / present: the Hypothesis follows from the Premise.
+      - 0 = neutral / absent: the Hypothesis may be true, but is not guaranteed by the Premise.
+      - -1 = contradiction / opposite: the Hypothesis conflicts with the Premise in at least one important detail.
+
+      Reason internally for each hypothesis, but output JSON only.
+
+      Rules:
+      - Use only the Premise plus ordinary language understanding.
+      - Do not require exact wording; paraphrases, synonyms, coreference, dates, arithmetic, geography, and common world knowledge are allowed.
+      - For entailment, the whole Hypothesis must be supported.
+      - For contradiction, one important conflicting detail is enough.
+      - If the Hypothesis adds an unsupported extra claim, use neutral unless that extra claim conflicts with the Premise.
+      - Return one item per Hypothesis, in the same order.
+
+      Premise:
+      {dialogue_block}
+
+      Hypotheses JSON array:
+      {points_json}
+
+      Return JSON only:
+      {{
+        "points": [
+          {{
+            "point": "copy exact hypothesis text",
+            "score": 0,
+            "quote": "short exact premise quote or empty string",
+            "rationale": "one short sentence",
+            "confidence": 0.0
+          }}
+        ]
+      }}

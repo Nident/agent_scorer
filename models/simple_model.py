@@ -18,6 +18,7 @@ try:
     from utils import (
         dialogue_to_text,
         load_dialogue,
+        load_points,
         load_steps,
         load_text_if_exists,
         summary_for_block,
@@ -34,6 +35,7 @@ except ModuleNotFoundError:
     from utils import (
         dialogue_to_text,
         load_dialogue,
+        load_points,
         load_steps,
         load_text_if_exists,
         summary_for_block,
@@ -107,6 +109,8 @@ class SimpleQueryModel(Model):
             dialogue_blocks = [""]
 
         criterion_text = load_text_if_exists(context.get("criterion_path", ""))
+        points = load_points(context.get("criterion_path", ""), context)
+        points_json = json.dumps(points, ensure_ascii=False, indent=2)
         evaluated_speaker = context.get("evaluated_speaker", "B")
         response_type = (step.get("response_type") or "text").lower()
 
@@ -120,6 +124,7 @@ class SimpleQueryModel(Model):
                 {
                     "evaluated_speaker": evaluated_speaker,
                     "criterion": criterion_text,
+                    "points_json": points_json,
                     "dialogue": dialogue_block,
                     "dialogue_block": dialogue_block,
                     "dialogue_history": history_for_prompt,
